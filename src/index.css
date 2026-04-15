@@ -1,13 +1,56 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
+
+:root {
+  --ink: #12345d;
+  --muted: #6580a4;
+  --surface: #f3f9ff;
+  --blue-950: #0c2f59;
+  --blue-900: #123f73;
+  --blue-800: #19589e;
+  --blue-700: #2475d6;
+  --blue-500: #4aa0ff;
+  --blue-300: #9fd3ff;
+  --blue-200: #d8ecff;
+  --blue-100: #eaf5ff;
+  --line: #d7e9ff;
+  --line-strong: #c7def9;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(121, 196, 255, 0.55), transparent 26rem),
+    radial-gradient(circle at top right, rgba(74, 149, 255, 0.22), transparent 24rem),
+    radial-gradient(circle at bottom center, rgba(171, 220, 255, 0.28), transparent 28rem),
+    linear-gradient(180deg, #f9fcff 0%, #edf6ff 100%);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#root {
+  min-height: 100vh;
 }
