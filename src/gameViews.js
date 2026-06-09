@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { safeJsonParse } from './appData';
 import { SectionHeading } from './uiPieces';
+import lifeScenarioArt from './assets/life-scenario-game.png';
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -359,6 +360,7 @@ export function TrustSorterGame({ game, busy, onComplete }) {
   const [placements, setPlacements] = useState({});
   const [checked, setChecked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [lastMove, setLastMove] = useState(null);
 
   const placedCount = Object.keys(placements).length;
   const readyToCheck = placedCount >= runItems.length;
@@ -378,6 +380,7 @@ export function TrustSorterGame({ game, busy, onComplete }) {
     setPlacements({});
     setChecked(false);
     setSaved(false);
+    setLastMove(null);
   }
 
   function allowDrop(event) {
@@ -395,7 +398,16 @@ export function TrustSorterGame({ game, busy, onComplete }) {
     if (!scenarioId || !scenarioMap.has(scenarioId) || checked) {
       return;
     }
+    placeScenario(scenarioId, targetVerdict);
+  }
+
+  function placeScenario(scenarioId, targetVerdict) {
+    if (!scenarioId || !scenarioMap.has(scenarioId) || checked) {
+      return;
+    }
+
     setPlacements((prev) => ({ ...prev, [scenarioId]: targetVerdict }));
+    setLastMove({ id: scenarioId, target: targetVerdict, tick: Date.now() });
   }
 
   function moveToPool(event) {
@@ -409,6 +421,7 @@ export function TrustSorterGame({ game, busy, onComplete }) {
       delete next[scenarioId];
       return next;
     });
+    setLastMove(null);
   }
 
   function checkResult() {
@@ -434,18 +447,18 @@ export function TrustSorterGame({ game, busy, onComplete }) {
     <div className="game-card-shell trust-sorter">
       <div className="game-meta">
         <span className="soft-chip">Сенім сүзгісі</span>
-        <span className="soft-chip">Салынды: {placedCount} / {runItems.length}</span>
-        {checked ? <span className="soft-chip">Ұпай: {score}</span> : <span className="soft-chip">10 карта</span>}
+        <span className="soft-chip">Орналастырылды: {placedCount} / {runItems.length}</span>
+        {checked ? <span className="soft-chip">Ұпай: {score}</span> : <span className="soft-chip">10 жағдай</span>}
       </div>
 
-      <article className="feature-panel">
+      <article className="feature-panel trust-brief">
         <SectionTitle
-          title="Карталарды себеттерге сал"
-          description="Картаны алып, “Доверять” немесе “Не доверять” себетіне сал. Барлығын бөліп болған соң “Тексеру” бас."
+          title="Жағдайларды екі аймаққа бөл"
+          description="Әр картаны оқы да, қауіпсіз әрекет болса “Қауіпсіз”, ал жеке дерек сұраса немесе асықтырса “Қауіпті” аймағына сал. Соңында тексер."
         />
         <div className="cta-row">
           <button type="button" className="secondary-btn" onClick={resetRun} disabled={busy}>
-            Жаңа раунд (кездейсоқ)
+            Жаңа айналым
           </button>
           <button type="button" className="primary-btn" onClick={checkResult} disabled={busy || checked || !readyToCheck}>
             Тексеру
@@ -458,34 +471,37 @@ export function TrustSorterGame({ game, busy, onComplete }) {
 
       <div className="trust-layout">
         <article className="feature-panel trust-pool" onDragOver={allowDrop} onDrop={moveToPool}>
-          <SectionHeading eyebrow="Таңдау" title="Карталар" description="Әр ойында 10 кездейсоқ жағдай шығады." />
+          <SectionHeading eyebrow="Топтама" title="Жағдай карталары" description="Сүйреп апар немесе картадағы батырманы бас." />
           <div className="trust-card-grid">
-            {pool.map((item) => (
+            {pool.map((item, cardIndex) => (
               <div
                 key={item.id}
-                className={`trust-card ${checked ? (placements[item.id] ? '' : '') : ''}`}
+                className={`trust-card trust-card--${cardIndex % 4}`}
                 draggable={!busy && !checked}
                 onDragStart={(event) => onDragStart(event, item.id)}
               >
-                <strong>{item.text}</strong>
-                <small>Тарту арқылы немесе батырмамен сал</small>
+                <span className="trust-card-mark" aria-hidden="true">{cardIndex + 1}</span>
+                <div className="trust-card-copy">
+                  <strong>{item.text}</strong>
+                  <small>Қай аймаққа сай екенін таңда</small>
+                </div>
                 {!checked ? (
                   <div className="trust-card-actions">
                     <button
                       type="button"
                       className="trust-action trust-action--good"
-                      onClick={() => setPlacements((prev) => ({ ...prev, [item.id]: 'trust' }))}
+                      onClick={() => placeScenario(item.id, 'trust')}
                       disabled={busy}
                     >
-                      Доверять
+                      Қауіпсіз
                     </button>
                     <button
                       type="button"
                       className="trust-action trust-action--bad"
-                      onClick={() => setPlacements((prev) => ({ ...prev, [item.id]: 'no_trust' }))}
+                      onClick={() => placeScenario(item.id, 'no_trust')}
                       disabled={busy}
                     >
-                      Не доверять
+                      Қауіпті
                     </button>
                   </div>
                 ) : null}
@@ -494,76 +510,54 @@ export function TrustSorterGame({ game, busy, onComplete }) {
           </div>
         </article>
 
-        <article className="feature-panel trust-bin trust-bin--good" onDragOver={allowDrop} onDrop={(event) => placeFromDrop(event, 'trust')}>
-          <h3>Доверять</h3>
-          <p className="page-copy">Қауіпсіз, тексерілген, дұрыс әрекет.</p>
-          <div className="trust-bin-grid">
-            {trustBin.map((item) => {
-              const correct = checked ? item.verdict === 'trust' : null;
-              return (
-                <div
-                  key={item.id}
-                  className={`trust-chip ${checked ? (correct ? 'is-correct' : 'is-wrong') : ''}`}
-                  draggable={!busy && !checked}
-                  onDragStart={(event) => onDragStart(event, item.id)}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    if (checked) {
-                      return;
-                    }
-                    setPlacements((prev) => {
-                      const next = { ...prev };
-                      delete next[item.id];
-                      return next;
-                    });
-                  }}
-                >
-                  {item.text}
-                </div>
-              );
-            })}
-          </div>
-          {!checked ? <small className="hint-text">Қайтару үшін карточканы бас немесе сол жаққа сүйреп апар.</small> : null}
-        </article>
+        <div className="trust-board">
+          <TrustBin
+            title="Қауіпсіз"
+            text="Тексеру, ересекке айту, ресми арна қолдану сияқты дұрыс әрекеттер."
+            tone="good"
+            items={trustBin}
+            expectedVerdict="trust"
+            checked={checked}
+            busy={busy}
+            lastMove={lastMove}
+            onDragStart={onDragStart}
+            onDrop={(event) => placeFromDrop(event, 'trust')}
+            onDragOver={allowDrop}
+            onReturn={(itemId) => {
+              setPlacements((prev) => {
+                const next = { ...prev };
+                delete next[itemId];
+                return next;
+              });
+            }}
+          />
 
-        <article className="feature-panel trust-bin trust-bin--bad" onDragOver={allowDrop} onDrop={(event) => placeFromDrop(event, 'no_trust')}>
-          <h3>Не доверять</h3>
-          <p className="page-copy">Күмәнді, қауіпті, жеке дерек сұрайды.</p>
-          <div className="trust-bin-grid">
-            {noTrustBin.map((item) => {
-              const correct = checked ? item.verdict === 'no_trust' : null;
-              return (
-                <div
-                  key={item.id}
-                  className={`trust-chip ${checked ? (correct ? 'is-correct' : 'is-wrong') : ''}`}
-                  draggable={!busy && !checked}
-                  onDragStart={(event) => onDragStart(event, item.id)}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    if (checked) {
-                      return;
-                    }
-                    setPlacements((prev) => {
-                      const next = { ...prev };
-                      delete next[item.id];
-                      return next;
-                    });
-                  }}
-                >
-                  {item.text}
-                </div>
-              );
-            })}
-          </div>
-          {!checked ? <small className="hint-text">Қайтару үшін карточканы бас немесе сол жаққа сүйреп апар.</small> : null}
-        </article>
+          <TrustBin
+            title="Қауіпті"
+            text="Құпиясөз, код, жеке дерек сұрау немесе асықтыру бар жағдайлар."
+            tone="bad"
+            items={noTrustBin}
+            expectedVerdict="no_trust"
+            checked={checked}
+            busy={busy}
+            lastMove={lastMove}
+            onDragStart={onDragStart}
+            onDrop={(event) => placeFromDrop(event, 'no_trust')}
+            onDragOver={allowDrop}
+            onReturn={(itemId) => {
+              setPlacements((prev) => {
+                const next = { ...prev };
+                delete next[itemId];
+                return next;
+              });
+            }}
+          />
+        </div>
       </div>
 
       {checked ? (
         <article className={`result-box ${passed ? 'result-success' : 'result-warning'}`}>
-          <h3>{passed ? 'Ты успешно прошел' : 'Ты проиграл'}</h3>
+          <h3>{passed ? 'Жақсы нәтиже' : 'Қайта жаттығып көр'}</h3>
           <p>
             Дұрыс жауаптар: {correctCount} / {runItems.length}. Ұпай: {score}.
           </p>
@@ -580,6 +574,511 @@ export function TrustSorterGame({ game, busy, onComplete }) {
           </div>
         </article>
       ) : null}
+    </div>
+  );
+}
+
+function TrustBin({
+  title,
+  text,
+  tone,
+  items,
+  expectedVerdict,
+  checked,
+  busy,
+  lastMove,
+  onDragStart,
+  onDrop,
+  onDragOver,
+  onReturn,
+}) {
+  return (
+    <article className={`feature-panel trust-bin trust-bin--${tone}`} onDragOver={onDragOver} onDrop={onDrop}>
+      <div className="trust-bin-head">
+        <div>
+          <h3>{title}</h3>
+          <p className="page-copy">{text}</p>
+        </div>
+        <span className="trust-bin-count">{items.length}</span>
+      </div>
+      <div className="trust-bin-grid">
+        {items.map((item) => {
+          const correct = checked ? item.verdict === expectedVerdict : null;
+          const isFresh = lastMove?.id === item.id && lastMove?.target === expectedVerdict;
+
+          return (
+            <div
+              key={item.id}
+              className={`trust-chip ${isFresh ? 'is-fresh' : ''} ${checked ? (correct ? 'is-correct' : 'is-wrong') : ''}`}
+              draggable={!busy && !checked}
+              onDragStart={(event) => onDragStart(event, item.id)}
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                if (!checked) {
+                  onReturn(item.id);
+                }
+              }}
+              onKeyDown={(event) => {
+                if ((event.key === 'Enter' || event.key === ' ') && !checked) {
+                  event.preventDefault();
+                  onReturn(item.id);
+                }
+              }}
+            >
+              {item.text}
+            </div>
+          );
+        })}
+      </div>
+      {!checked ? <small className="hint-text">Қайтару үшін картаны бас немесе топтамаға сүйреп апар.</small> : null}
+    </article>
+  );
+}
+
+export function LifeScenarioGame({ game, busy, onComplete }) {
+  const fallbackContent = {
+    version: 'life-scenarios-v1',
+    scenarioCount: 5,
+    scenarios: [
+      {
+        id: 'chat-secret',
+        place: 'Ойын чаты',
+        title: 'Жаңа ойыншы жеке чатқа шақырды',
+        question: 'Бейтаныс ойыншы: "Ата-анаңа айтпа, маған суретіңді және қай мектепте оқитыныңды жібер. Сонда саған сирек скин беремін" дейді. Не істейсің?',
+        characterMood: 'alert',
+        choices: [
+          {
+            id: 'block',
+            text: 'Чатты жабамын, бұғаттаймын және ересекке айтамын',
+            points: 20,
+            outcome: 'Сен жеке деректеріңді сақтап қалдың және қауіпті әңгімені тоқтаттың.',
+            lesson: 'Құпия сақтауды сұрайтын бейтаныс адамға жеке ақпарат жіберуге болмайды.',
+          },
+          {
+            id: 'ask-more',
+            text: 'Алдымен қандай скин екенін сұраймын',
+            points: 8,
+            outcome: 'Әңгіме ұзарып, ол тағы да жеке дерек сұрауы мүмкін.',
+            lesson: 'Күмәнді ұсынысты созбай тоқтатқан дұрыс.',
+          },
+          {
+            id: 'send',
+            text: 'Скин алу үшін сурет пен мектепті жіберемін',
+            points: 0,
+            outcome: 'Бейтаныс адам сен туралы артық ақпарат алды.',
+            lesson: 'Фото, мектеп, мекенжай және телефон жеке дерек болып саналады.',
+          },
+        ],
+      },
+      {
+        id: 'class-meme',
+        place: 'Сынып чаты',
+        title: 'Досың күлкілі сурет жіберді',
+        question: 'Сынып чатында бір оқушының суретін мазақ қылып жіберді. Барлығы күліп, "сен де тарат" дейді. Қалай әрекет етесің?',
+        characterMood: 'kind',
+        choices: [
+          {
+            id: 'support',
+            text: 'Таратпаймын, чатта тоқтатуды сұраймын және мұғалімге айтамын',
+            points: 20,
+            outcome: 'Сен кибербуллингті күшейтпедің және көмек шақырдың.',
+            lesson: 'Мазақ суретті тарату да ренжітуге қатысу болып саналады.',
+          },
+          {
+            id: 'ignore',
+            text: 'Ештеңе жазбай, жай ғана өшіріп тастаймын',
+            points: 12,
+            outcome: 'Сен суретті таратпадың, бірақ жағдай тоқтамауы мүмкін.',
+            lesson: 'Қауіпсіз қадам: таратпау және сенімді ересекке айту.',
+          },
+          {
+            id: 'forward',
+            text: 'Достарыма да жіберемін',
+            points: 0,
+            outcome: 'Сурет көбірек таралып, балаға ауыр тиеді.',
+            lesson: 'Басқа адамды ұялтатын контентті бөлісуге болмайды.',
+          },
+        ],
+      },
+      {
+        id: 'free-prize',
+        place: 'Браузер',
+        title: 'Тегін сыйлық беті ашылды',
+        question: 'Сайт "сен ұттың!" деп, ойын аккаунтыңның логині мен құпиясөзін енгізуді сұрайды. Не таңдайсың?',
+        characterMood: 'thinking',
+        choices: [
+          {
+            id: 'close',
+            text: 'Бетті жабамын және ресми қолданбадан тексеремін',
+            points: 20,
+            outcome: 'Сен фишинг бетіне дерек енгізбедің.',
+            lesson: 'Сыйлық уәдесімен құпиясөз сұраса, бұл қауіпті белгі.',
+          },
+          {
+            id: 'fake',
+            text: 'Қате құпиясөз жазып көремін',
+            points: 6,
+            outcome: 'Сайт бәрібір сенің логиніңді немесе басқа деректі жинауы мүмкін.',
+            lesson: 'Күмәнді сайтпен тәжірибе жасамай, оны жабу керек.',
+          },
+          {
+            id: 'login',
+            text: 'Логин мен құпиясөзді енгіземін',
+            points: 0,
+            outcome: 'Аккаунтың ұрлануы мүмкін.',
+            lesson: 'Құпиясөзді тек ресми сайтта немесе қолданбада енгіз.',
+          },
+        ],
+      },
+      {
+        id: 'wifi',
+        place: 'Кафе',
+        title: 'Тегін Wi-Fi қосылды',
+        question: 'Кафедегі Wi-Fi "әлеуметтік желі пароліңді енгізсең ғана интернет беремін" дейді. Не істейсің?',
+        characterMood: 'careful',
+        choices: [
+          {
+            id: 'skip',
+            text: 'Қосылмаймын немесе ата-анамнан мобильді интернет сұраймын',
+            points: 20,
+            outcome: 'Сен пароліңді күмәнді желіге бермедің.',
+            lesson: 'Wi-Fi ешқашан әлеуметтік желі паролін сұрамауы керек.',
+          },
+          {
+            id: 'ask-staff',
+            text: 'Кафе қызметкерінен ресми Wi-Fi атауын сұраймын',
+            points: 16,
+            outcome: 'Сен желінің рас екенін тексердің.',
+            lesson: 'Қоғамдық жерде желі атауын тексеру пайдалы.',
+          },
+          {
+            id: 'enter',
+            text: 'Парольді енгіземін, интернет керек',
+            points: 0,
+            outcome: 'Паролің бөтен адамға кетуі мүмкін.',
+            lesson: 'Қоғамдық Wi-Fi-да аккаунт деректерін енгізбе.',
+          },
+        ],
+      },
+      {
+        id: 'friend-money',
+        place: 'Мессенджер',
+        title: 'Досың ақша сұрады',
+        question: 'Досыңның аккаунтынан "тез ақша жібер, кейін түсіндіремін" деген хабар келді. Жазу стилі біртүрлі. Не істейсің?',
+        characterMood: 'suspicious',
+        choices: [
+          {
+            id: 'call',
+            text: 'Басқа жолмен хабарласып, рас екенін тексеремін',
+            points: 20,
+            outcome: 'Сен бұзылған аккаунт болуы мүмкін екенін байқадың.',
+            lesson: 'Ақша немесе код сұраса, басқа арнамен тексер.',
+          },
+          {
+            id: 'question',
+            text: 'Чатта "сен шынымен кімсің?" деп сұраймын',
+            points: 10,
+            outcome: 'Алаяқ жауап ойлап табуы мүмкін.',
+            lesson: 'Сол чаттың өзінде тексеру жеткіліксіз.',
+          },
+          {
+            id: 'send-money',
+            text: 'Көмектесу үшін бірден жіберемін',
+            points: 0,
+            outcome: 'Ақша алаяққа кетуі мүмкін.',
+            lesson: 'Қысым мен асықтыру қауіп белгісі.',
+          },
+        ],
+      },
+      {
+        id: 'camera-permission',
+        place: 'Жаңа қосымша',
+        title: 'Қосымша көп рұқсат сұрады',
+        question: 'Қарапайым викторина қолданбасы камера, микрофон, геолокация және контакт сұрайды. Сенің таңдауың?',
+        characterMood: 'focused',
+        choices: [
+          {
+            id: 'deny',
+            text: 'Артық рұқсаттарды бермеймін, қажет болса қолданбаны өшіремін',
+            points: 20,
+            outcome: 'Сен деректеріңді артық жинаудан қорғадың.',
+            lesson: 'Қолданбаға тек жұмысына қажет рұқсаттарды бер.',
+          },
+          {
+            id: 'location-only',
+            text: 'Тек геолокацияны қосамын',
+            points: 7,
+            outcome: 'Викторинаға орналасқан жерің қажет болмауы мүмкін.',
+            lesson: 'Әр рұқсаттың не үшін керек екенін ойлан.',
+          },
+          {
+            id: 'allow-all',
+            text: 'Барлығына рұқсат беремін',
+            points: 0,
+            outcome: 'Қолданба сен туралы көп ақпарат жинай алады.',
+            lesson: 'Артық рұқсаттар жеке қауіпсіздікке әсер етеді.',
+          },
+        ],
+      },
+      {
+        id: 'online-challenge',
+        place: 'Әлеуметтік желі',
+        title: 'Қауіпті челлендж шықты',
+        question: 'Танымал челлендж үйдегі құжаттарды және бөлмеңді видеоға түсіріп салуды сұрайды. Не істейсің?',
+        characterMood: 'decisive',
+        choices: [
+          {
+            id: 'skip-report',
+            text: 'Қатыспаймын, жеке ақпарат көрінсе видеоны салмаймын',
+            points: 20,
+            outcome: 'Сен үйің мен отбасың туралы деректерді сақтадың.',
+            lesson: 'Видеода құжат, мекенжай, мектеп формасы сияқты дерек көрінуі мүмкін.',
+          },
+          {
+            id: 'crop',
+            text: 'Тек фонды қатты тексеріп, қауіпсіз болса ғана түсіремін',
+            points: 14,
+            outcome: 'Сен жарияламас бұрын тексердің, бірақ бәрібір абай болу керек.',
+            lesson: 'Пост салмас бұрын кадрдағы барлық нәрсені тексер.',
+          },
+          {
+            id: 'post',
+            text: 'Тез түсіріп, бірден жариялаймын',
+            points: 0,
+            outcome: 'Видеода жеке дерек қалып қоюы мүмкін.',
+            lesson: 'Жылдам жариялау қателікке әкеледі.',
+          },
+        ],
+      },
+      {
+        id: 'teacher-link',
+        place: 'Мектеп порталы',
+        title: 'Мұғалім тапсырма жіберді',
+        question: 'Мұғалім мектептің ресми чатында LMS сілтемесін жіберді. Бірақ сен бәрібір сенімді болғың келеді. Не істейсің?',
+        characterMood: 'confident',
+        choices: [
+          {
+            id: 'check-domain',
+            text: 'Сілтеменің доменін тексеріп, ресми порталмен салыстырамын',
+            points: 20,
+            outcome: 'Сен пайдалы әдет қолдандың: алдымен тексердің.',
+            lesson: 'Ресми арнадан келсе де, доменді қарап алған дұрыс.',
+          },
+          {
+            id: 'click-fast',
+            text: 'Бірден басамын, мұғалім жіберді ғой',
+            points: 12,
+            outcome: 'Бұл жолы қауіп аз, бірақ әдет ретінде тексерген жақсы.',
+            lesson: 'Жақсы қауіпсіздік әдеттері күн сайын көмектеседі.',
+          },
+          {
+            id: 'share-password',
+            text: 'Кіре алмасам, досыма паролімді айтып көмек сұраймын',
+            points: 0,
+            outcome: 'Паролің басқа адамның қолына өтеді.',
+            lesson: 'Көмек керек болса, парольді айтпай ересектен сұра.',
+          },
+        ],
+      },
+    ],
+  };
+
+  const parsed = safeJsonParse(game.contentJson, {});
+  const content = Array.isArray(parsed?.scenarios) ? parsed : fallbackContent;
+  const allScenarios = Array.isArray(content?.scenarios) ? content.scenarios : fallbackContent.scenarios;
+  const scenarioCount = clamp(Number(content?.scenarioCount) || 5, 1, allScenarios.length);
+
+  const [runSeed, setRunSeed] = useState(0);
+  const [index, setIndex] = useState(0);
+  const [selectedChoiceId, setSelectedChoiceId] = useState(null);
+  const [answers, setAnswers] = useState([]);
+  const [finished, setFinished] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const runScenarios = useMemo(() => {
+    return sampleUnique(allScenarios, scenarioCount).map((scenario, scenarioIndex) => ({
+      ...scenario,
+      id: String(scenario.id ?? `life-${runSeed}-${scenarioIndex}`),
+      choices: Array.isArray(scenario.choices) ? scenario.choices : [],
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runSeed, scenarioCount]);
+
+  const currentScenario = runScenarios[index] ?? null;
+  const selectedChoice = currentScenario?.choices?.find((choice) => choice.id === selectedChoiceId) ?? null;
+  const maxScore = runScenarios.length * 20;
+  const earnedScore = answers.reduce((sum, answer) => sum + Number(answer.choice?.points ?? 0), 0);
+  const finalScore = maxScore ? Math.round((earnedScore / maxScore) * 100) : 0;
+
+  const ending =
+    finalScore >= 85
+      ? {
+          title: 'Кибер-навигатор',
+          text: 'Сен қиын жағдайларда тоқтап, тексеріп, өзіңді де, достарыңды да қорғадың.',
+          tone: 'result-success',
+        }
+      : finalScore >= 60
+        ? {
+            title: 'Осторожный исследователь',
+            text: 'Көп шешімің дұрыс. Кейбір жерде асықпай, ересектен көмек сұрасаң нәтиже одан да мықты болады.',
+            tone: 'result-success',
+          }
+        : {
+            title: 'Нужна помощь команды',
+            text: 'Кей жағдайларда қауіп белгісі байқалмай қалды. Жақсы жаңалық: енді сен нені тексеру керегін білесің.',
+            tone: 'result-warning',
+          };
+
+  function chooseOption(choiceId) {
+    if (finished) {
+      return;
+    }
+    setSelectedChoiceId(choiceId);
+  }
+
+  function moveNext() {
+    if (!currentScenario || !selectedChoice) {
+      return;
+    }
+
+    const nextAnswers = [
+      ...answers,
+      {
+        scenario: currentScenario,
+        choice: selectedChoice,
+      },
+    ];
+
+    setAnswers(nextAnswers);
+    setSelectedChoiceId(null);
+
+    if (index + 1 >= runScenarios.length) {
+      const score = Math.round(
+        (nextAnswers.reduce((sum, answer) => sum + Number(answer.choice?.points ?? 0), 0) / maxScore) * 100
+      );
+      setFinished(true);
+      if (!saved) {
+        setSaved(true);
+        onComplete(game.id, score, `Жизненные сценарии: ${score}`);
+      }
+      return;
+    }
+
+    setIndex((value) => value + 1);
+  }
+
+  function restart() {
+    setRunSeed((value) => value + 1);
+    setIndex(0);
+    setSelectedChoiceId(null);
+    setAnswers([]);
+    setFinished(false);
+    setSaved(false);
+  }
+
+  if (!currentScenario && !finished) {
+    return (
+      <article className="result-box result-warning">
+        <h3>Сценарийлер табылмады</h3>
+        <p>Ойын мазмұнын тексеріңіз.</p>
+      </article>
+    );
+  }
+
+  return (
+    <div className="game-card-shell life-game">
+      <div className="game-meta">
+        <span className="soft-chip">Өмірлік сценарийлер</span>
+        <span className="soft-chip">{finished ? 'Финал' : `${index + 1} / ${runScenarios.length}`}</span>
+        <span className="soft-chip">Жауап соңында ашылады</span>
+      </div>
+
+      {!finished ? (
+        <article className={`life-stage life-stage--${currentScenario.characterMood ?? 'focused'}`}>
+          <img className="life-stage-art" src={lifeScenarioArt} alt="Бала цифрлық қауіпсіздік жағдайларын таңдап тұр" />
+          <div className="life-stage-overlay">
+            <span className="soft-chip">{currentScenario.place}</span>
+            <h3>{currentScenario.title}</h3>
+            <p>{currentScenario.question}</p>
+          </div>
+          <div className="life-character-card">
+            <span className="life-avatar" aria-hidden="true">?</span>
+            <div>
+              <strong>Сенің таңдауың</strong>
+              <small>Қазір жауап көрсетілмейді. 5 жағдайдан кейін толық нәтиже шығады.</small>
+            </div>
+          </div>
+        </article>
+      ) : (
+        <article className={`life-finale ${ending.tone}`}>
+          <div>
+            <span className="eyebrow">Финал</span>
+            <h3>{ending.title}</h3>
+            <p>{ending.text}</p>
+          </div>
+          <div className="life-score-badge">
+            <strong>{finalScore}</strong>
+            <span>ұпай</span>
+          </div>
+        </article>
+      )}
+
+      {!finished ? (
+        <article className="feature-panel life-choice-panel">
+          <SectionTitle
+            title="Қалай әрекет етесің?"
+            description="Бір нұсқаны таңда. Дұрыс-бұрысын ойын соңында бірге қараймыз."
+          />
+          <div className="life-choice-grid">
+            {currentScenario.choices.map((choice, choiceIndex) => (
+              <button
+                key={choice.id}
+                type="button"
+                className={`life-choice-card ${selectedChoiceId === choice.id ? 'is-selected' : ''}`}
+                onClick={() => chooseOption(choice.id)}
+                disabled={busy}
+              >
+                <span>{choiceIndex + 1}</span>
+                <strong>{choice.text}</strong>
+              </button>
+            ))}
+          </div>
+          <div className="cta-row">
+            <button type="button" className="secondary-btn" onClick={restart} disabled={busy}>
+              Қайта бастау
+            </button>
+            <button type="button" className="primary-btn" onClick={moveNext} disabled={busy || !selectedChoiceId}>
+              {index + 1 >= runScenarios.length ? 'Финалды көру' : 'Келесі жағдай'}
+            </button>
+          </div>
+        </article>
+      ) : (
+        <>
+          <article className="feature-panel life-review-panel">
+            <SectionTitle
+              title="Сенің әрекеттерің"
+              description="Міне, 5 жағдайдағы таңдауларың және қауіпсіз шешімнің себебі."
+            />
+            <div className="life-review-grid">
+              {answers.map((answer, answerIndex) => (
+                <article key={answer.scenario.id} className="life-review-card">
+                  <span className="soft-chip">#{answerIndex + 1} {answer.scenario.place}</span>
+                  <h3>{answer.scenario.title}</h3>
+                  <p><strong>Таңдауың:</strong> {answer.choice.text}</p>
+                  <p>{answer.choice.outcome}</p>
+                  <small>{answer.choice.lesson}</small>
+                </article>
+              ))}
+            </div>
+          </article>
+          <div className="cta-row">
+            <button type="button" className="primary-btn" onClick={restart} disabled={busy}>
+              Тағы ойнау
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

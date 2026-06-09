@@ -393,9 +393,22 @@ const COURSE_TRANSLATIONS = {
 
 const GAME_TRANSLATIONS = {
   'inbox-defender': {
-    title: 'Пошта қалқаны',
-    description: 'Хаттарды оқып, фишинг белгілерін тап та дұрыс шешім қабылда.',
-    instructions: 'Күдікті белгілерді белгіле, соңында "Қауіпсіз" немесе "Фишинг" деп таңда. Әр раундтан кейін түсіндірме беріледі.',
+    title: 'Қауіпсіз шешімдер',
+    description: 'Күнделікті өмірдегі цифрлық жағдайларда дұрыс әрекет таңда.',
+    instructions: '5 кездейсоқ жағдайдан өт. Әр таңдаудың салдары финалда бірге көрсетіледі.',
+    gameType: 'life-scenarios',
+    thumbnailLabel: 'LIFE',
+    accentColor: '#2aa7a1',
+    rewardPoints: 60,
+    estimatedMinutes: 5,
+    difficulty: 'Орташа',
+  },
+  'trust-sorter': {
+    title: 'Сенім сүзгісі',
+    description: 'Жағдай карталарын қауіпсіз және қауіпті аймақтарға бөліп үйрен.',
+    instructions: '10 кездейсоқ картаны оқы. Қауіпсіз әрекеттерді бір аймаққа, күмәнді сұрауларды екінші аймаққа орналастыр.',
+    thumbnailLabel: 'СҮЗГІ',
+    accentColor: '#2f8f83',
     difficulty: 'Орташа',
   },
 };
@@ -515,7 +528,12 @@ export function localizeGame(game) {
     title: translation.title ?? game.title,
     description: translation.description ?? game.description,
     instructions: translation.instructions ?? game.instructions,
+    gameType: translation.gameType ?? game.gameType,
     difficulty: translation.difficulty ?? game.difficulty,
+    accentColor: translation.accentColor ?? game.accentColor,
+    rewardPoints: translation.rewardPoints ?? game.rewardPoints,
+    estimatedMinutes: translation.estimatedMinutes ?? game.estimatedMinutes,
+    thumbnailLabel: translation.thumbnailLabel ?? game.thumbnailLabel,
   };
 
   // Only overlay scenario text if this game actually uses scenarios.

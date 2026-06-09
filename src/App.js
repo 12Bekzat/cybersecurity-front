@@ -1374,7 +1374,7 @@ function App() {
           </div>
 
           <div className="footer-column">
-            <span className="footer-title">Егер бірдеңе болса</span>
+            <span className="footer-title">Егер қауіпті болса</span>
             <div className="footer-note-list">
               <div className="footer-note-card">
                 Жағымсыз хат алмасудың скриншотын сақта.

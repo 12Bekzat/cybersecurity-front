@@ -157,17 +157,26 @@ test('renders the new landing hero and seeded course card', async () => {
 
   expect(
     await screen.findByRole('heading', {
-      name: /Детский учебный сайт, где цифровая безопасность превращается в приключение/i,
+      name: /Балаларға арналған цифрлық қауіпсіздік платформасы/i,
     })
   ).toBeInTheDocument();
-  expect((await screen.findAllByText(/Киберщит новичка/i)).length).toBeGreaterThan(0);
+  expect(await screen.findByText(/Дайын курстар/i)).toBeInTheDocument();
 });
 
 test('opens the auth page from navigation', async () => {
   render(<App />);
 
-  fireEvent.click(await screen.findByRole('button', { name: /Войти и продолжить/i }));
+  fireEvent.click((await screen.findAllByRole('button', { name: /Кіру/i }))[0]);
 
-  expect(await screen.findByRole('heading', { name: /Вход и регистрация через backend JWT/i })).toBeInTheDocument();
-  expect(screen.getByText(/Готовые аккаунты для проверки/i)).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: /Өз қауіпсіз оқу бағытыңа кір/i })).toBeInTheDocument();
+  expect(screen.getByText(/JWT арқылы кіру және тіркелу/i)).toBeInTheDocument();
+});
+
+test('opens life scenario game from the games page', async () => {
+  render(<App />);
+
+  fireEvent.click((await screen.findAllByRole('button', { name: /^Ойындар$/i }))[0]);
+
+  expect(await screen.findByText(/Өмірлік сценарийлер/i)).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: /Қалай әрекет етесің/i })).toBeInTheDocument();
 });

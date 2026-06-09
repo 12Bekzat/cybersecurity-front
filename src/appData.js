@@ -62,7 +62,7 @@ export const SUPPORT_ACTIONS = [
   },
 ];
 
-const INBOX_DEFENDER_TEMPLATE = {
+export const INBOX_DEFENDER_TEMPLATE = {
   version: 'inbox-defender-v1',
   rounds: [
     {
@@ -172,6 +172,68 @@ const INBOX_DEFENDER_TEMPLATE = {
         { id: 'friendly', text: 'Тілі достық', isSuspicious: false },
       ],
       explain: 'Таныс адам, құпия дерек сұрамайды және сілтеме жоқ.',
+    },
+  ],
+};
+
+const LIFE_SCENARIOS_TEMPLATE = {
+  version: 'life-scenarios-v1',
+  scenarioCount: 5,
+  scenarios: [
+    {
+      id: 'chat-secret',
+      place: 'Ойын чаты',
+      title: 'Бейтаныс адам сыйлық ұсынды',
+      question: 'Ойыншы "ата-анаңа айтпа, суретіңді жіберсең скин беремін" дейді. Не істейсің?',
+      choices: [
+        { id: 'block', text: 'Чатты жабамын, бұғаттаймын және ересекке айтамын', points: 20, outcome: 'Қауіпті байланыс тоқтады.', lesson: 'Бейтаныс адамға жеке ақпарат жіберме.' },
+        { id: 'ask', text: 'Алдымен сыйлық туралы сұраймын', points: 8, outcome: 'Әңгіме созылып кетті.', lesson: 'Күмәнді ұсынысты созбай тоқтат.' },
+        { id: 'send', text: 'Суретімді жіберемін', points: 0, outcome: 'Жеке дерек бөтен адамға кетті.', lesson: 'Фото да жеке дерек.' },
+      ],
+    },
+    {
+      id: 'class-meme',
+      place: 'Сынып чаты',
+      title: 'Мазақ сурет тарады',
+      question: 'Сынып чатында бір оқушыны мазақ қылған сурет жүр. Сенен де таратуды сұрады.',
+      choices: [
+        { id: 'support', text: 'Таратпаймын, тоқтатуды сұраймын және мұғалімге айтамын', points: 20, outcome: 'Сен кибербуллингті күшейтпедің.', lesson: 'Мазақ контентті бөліспе.' },
+        { id: 'delete', text: 'Жай ғана өшіріп тастаймын', points: 12, outcome: 'Сен таратпадың, бірақ көмек керек болуы мүмкін.', lesson: 'Ересекке айту дұрыс.' },
+        { id: 'forward', text: 'Достарыма жіберемін', points: 0, outcome: 'Сурет одан әрі тарады.', lesson: 'Басқаны ұялтатын контент қауіпті.' },
+      ],
+    },
+    {
+      id: 'free-prize',
+      place: 'Браузер',
+      title: 'Тегін сыйлық беті',
+      question: 'Сайт ойын аккаунтыңның логині мен құпиясөзін сұрады.',
+      choices: [
+        { id: 'close', text: 'Бетті жабамын және ресми қолданбадан тексеремін', points: 20, outcome: 'Құпиясөз сақталды.', lesson: 'Сыйлық үшін құпиясөз сұраса, бұл фишинг болуы мүмкін.' },
+        { id: 'fake', text: 'Қате құпиясөз жазып көремін', points: 6, outcome: 'Сайт басқа деректі де жинауы мүмкін.', lesson: 'Күмәнді сайтпен тәжірибе жасама.' },
+        { id: 'login', text: 'Логин мен құпиясөзді енгіземін', points: 0, outcome: 'Аккаунт ұрлануы мүмкін.', lesson: 'Құпиясөзді тек ресми жерде енгіз.' },
+      ],
+    },
+    {
+      id: 'wifi',
+      place: 'Кафе',
+      title: 'Тегін Wi-Fi',
+      question: 'Wi-Fi әлеуметтік желі паролін енгізуді сұрады.',
+      choices: [
+        { id: 'skip', text: 'Қосылмаймын немесе ересектен көмек сұраймын', points: 20, outcome: 'Пароль қауіпсіз қалды.', lesson: 'Wi-Fi әлеуметтік желі паролін сұрамауы керек.' },
+        { id: 'staff', text: 'Қызметкерден ресми желі атауын сұраймын', points: 16, outcome: 'Сен желіні тексердің.', lesson: 'Қоғамдық желіні тексеру пайдалы.' },
+        { id: 'enter', text: 'Парольді енгіземін', points: 0, outcome: 'Пароль бөтен адамға кетуі мүмкін.', lesson: 'Қоғамдық Wi-Fi-да аккаунт дерегін енгізбе.' },
+      ],
+    },
+    {
+      id: 'friend-money',
+      place: 'Мессенджер',
+      title: 'Досың ақша сұрады',
+      question: 'Досыңның аккаунты "тез ақша жібер" деп жазды, бірақ жазу стилі біртүрлі.',
+      choices: [
+        { id: 'call', text: 'Басқа жолмен хабарласып, рас екенін тексеремін', points: 20, outcome: 'Сен аккаунт бұзылғанын тексердің.', lesson: 'Ақша немесе код сұраса, басқа арнамен тексер.' },
+        { id: 'question', text: 'Сол чатта сұрақ қоямын', points: 10, outcome: 'Алаяқ жауап ойлап табуы мүмкін.', lesson: 'Сол чаттың өзі сенімді дәлел емес.' },
+        { id: 'send', text: 'Бірден жіберемін', points: 0, outcome: 'Ақша алаяққа кетуі мүмкін.', lesson: 'Асықтыру қауіп белгісі.' },
+      ],
     },
   ],
 };
@@ -358,22 +420,28 @@ export function createEmptyCourseForm() {
 }
 
 export function buildGameTemplate(type) {
-  return INBOX_DEFENDER_TEMPLATE;
+  if (type === 'inbox-defender') {
+    return LIFE_SCENARIOS_TEMPLATE;
+  }
+
+  return LIFE_SCENARIOS_TEMPLATE;
 }
 
-export function createEmptyGameForm(type = 'inbox-defender') {
+export function createEmptyGameForm(type = 'life-scenarios') {
+  const gameType = type === 'inbox-defender' ? 'life-scenarios' : type;
+
   return {
-    slug: 'inbox-defender',
-    title: 'Пошта қалқаны',
-    description: '',
-    instructions: 'Хатты оқы, күдікті белгілерді тап, сосын "Қауіпсіз" немесе "Фишинг" деп таңда.',
-    gameType: 'inbox-defender',
+    slug: 'life-scenarios',
+    description: 'Күнделікті өмірдегі цифрлық жағдайларда дұрыс әрекет таңда.',
+    title: 'Қауіпсіз шешімдер',
+    instructions: '5 кездейсоқ жағдайдан өт. Әр таңдаудың салдары финалда бірге көрсетіледі.',
+    gameType,
     difficulty: 'Орташа',
-    accentColor: '#1d67de',
-    rewardPoints: 50,
-    estimatedMinutes: 6,
-    thumbnailLabel: 'MAIL',
-    contentJson: JSON.stringify(buildGameTemplate(type), null, 2),
+    accentColor: '#2aa7a1',
+    rewardPoints: 60,
+    estimatedMinutes: 5,
+    thumbnailLabel: 'LIFE',
+    contentJson: JSON.stringify(buildGameTemplate(gameType), null, 2),
     published: true,
     featured: true,
   };

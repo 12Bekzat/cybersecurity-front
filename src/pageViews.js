@@ -1,12 +1,24 @@
 import { HOME_MISSIONS, SAFETY_PROMISES, SUPPORT_ACTIONS, getLessonBlocks, sortByPosition } from './appData';
 import { useEffect, useState } from 'react';
-import { InboxDefenderGame, TrustSorterGame, UnknownGamePreview } from './gameViews';
+import { LifeScenarioGame, TrustSorterGame, UnknownGamePreview } from './gameViews';
 import { serializeCourseForm } from './appData';
 import { EmptyPanel, FormField, GatePanel, LoadingPanel, SectionHeading, StatCard } from './uiPieces';
 import heroSafety from './assets/hero-safety.svg';
 import academyBuddy from './assets/academy-buddy.svg';
 import authFriends from './assets/auth-friends.svg';
 import gamesLab from './assets/games-lab.svg';
+
+function getGameTypeLabel(gameType) {
+  if (gameType === 'trust-sorter') {
+    return 'Қауіп сүзгісі';
+  }
+
+  if (gameType === 'life-scenarios' || gameType === 'inbox-defender') {
+    return 'Сценарий ойыны';
+  }
+
+  return gameType;
+}
 
 const AUTH_FEATURES = [
   {
@@ -991,7 +1003,7 @@ export function GamesPage({ user, loading, games, selectedGame, selectedGameId, 
               style={{ '--card-accent': game.accentColor }}
               onClick={() => onSelectGame(game.id)}
             >
-              <span className="soft-chip">{game.gameType}</span>
+              <span className="soft-chip">{getGameTypeLabel(game.gameType)}</span>
               <strong>{game.title}</strong>
               <p>{game.description}</p>
               <small>{game.bestScore ?? 0} ең жақсы ұпай</small>
@@ -1024,8 +1036,8 @@ export function GamesPage({ user, loading, games, selectedGame, selectedGameId, 
           </article>
 
           <article className="feature-panel game-stage">
-            {selectedGame.gameType === 'inbox-defender' ? (
-              <InboxDefenderGame
+            {selectedGame.gameType === 'life-scenarios' || selectedGame.gameType === 'inbox-defender' ? (
+              <LifeScenarioGame
                 key={selectedGame.id}
                 game={selectedGame}
                 busy={busyKey === `game-${selectedGame.id}`}
@@ -1409,7 +1421,6 @@ export function AdminPage(props) {
             <StatCard label="Курстар" value={adminData.overview.totalCourses} />
             <StatCard label="Ойындар" value={adminData.overview.totalGames} />
             <StatCard label="Сабақтар" value={adminData.overview.totalLessons} />
-            <StatCard label="Тест талпындарын" value={adminData.overview.totalQuizAttempts} />
           </div>
 
           <div className="split-shell">
